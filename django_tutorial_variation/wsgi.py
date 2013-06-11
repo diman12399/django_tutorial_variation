@@ -1,3 +1,4 @@
+# -*- encoding:utf-8 -*-
 """
 WSGI config for django_tutorial_variation project.
 

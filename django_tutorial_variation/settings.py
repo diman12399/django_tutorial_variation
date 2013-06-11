@@ -1,3 +1,4 @@
+# -*- encoding:utf-8 -*-
 # Django settings for django_tutorial_variation project.
 
 DEBUG = True
