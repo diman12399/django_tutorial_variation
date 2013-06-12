@@ -2,7 +2,7 @@
 from django.db import models
 
 
-class Pool(models.Model):
+class Poll(models.Model):
     question = models.CharField(max_length=200)
     pun_date = models.DateTimeField('date published')
 
