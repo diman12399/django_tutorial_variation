@@ -8,7 +8,7 @@ class Poll(models.Model):
 
 
 class Chice(models.Model):
-    pool = models.ForeignKey(Pool)
+    poll = models.ForeignKey(Poll)
     choice_text = models.CharField(max_length=200)
     votes = models.IntegerField(default=0)
 
