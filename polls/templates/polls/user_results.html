@@ -1,0 +1,5 @@
+<ul>
+{% for question in questionnaire %}
+    <li>{{ question.poll.question }} -- {{ question.choice.choice_text }}</li>
+{% endfor %}
+</ul>

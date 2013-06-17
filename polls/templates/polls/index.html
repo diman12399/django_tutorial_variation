@@ -3,9 +3,10 @@
 {% if latest_polls_list %}
     <ul>
     {% for poll in latest_polls_list %}
-        <li><a href="{% url 'polls:detail' poll.id %}">{{ poll.question }} </a></li>
+        <li><a href="{% url 'polls:detail' poll.id %}">{{ poll.question }}</a></li>
     {% endfor %}
     </ul>
+    <a href="{% url 'polls:questionnaire' %}">"Questionnaire"</a>
 {% else %}
     <p>No polls are available.</p>
 {% endif %}
