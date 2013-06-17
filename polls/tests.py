@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from polls.models import Poll
+from polls.models import Poll, Choice, User
 
 
 class PollMethodTests(TestCase):
@@ -37,14 +37,14 @@ class PollMethodTests(TestCase):
         self.assertEqual(recent_poll.was_published_recently(), True)
 
 
-def create_poll(question, days):
+def create_poll(question, days, order=0):
     """
     Creates a poll with the given `question` published the given number of
     `days` offset to now (negative for polls published in the past,
     positive for polls that have yet to be published).
     """
     return Poll.objects.create(question=question,
-        pub_date=timezone.now() + datetime.timedelta(days=days))
+        pub_date=timezone.now() + datetime.timedelta(days=days), order=order)
 
 
 class PollViewsTests(TestCase):
@@ -122,6 +122,45 @@ class PollIndexDetailTest(TestCase):
         """
         past_poll = create_poll(question='Past poll.', days=-5)
         response = self.client.get(reverse('polls:detail', args=(past_poll.id,)))
-        self.assertContain(response, past_poll.question, status_code=200)
+        self.assertContains(response, past_poll.question, status_code=200)
 
+
+def fill_polls_and_choice():
+    for i in range(5):
+        poll = create_poll(question='question %d' % i, days=-1, order=i)
+        for j in range(3):
+            Choice.objects.create(choice_text='choice %d' % j, poll=poll)
+
+    
+class QuestionnaireTest(TestCase):
+    def test_questionnaire_sequence(self):
+        fill_polls_and_choice()
+        response = self.client.get(reverse('polls:questionnaire'))
+        for i in range(5, -1):
+            poll = Poll.latest_polls()[i]
+            self.assertContains(response, poll.question, status_code=200)
+            response = response.client.post(reverse('polls:questionnaire'), {'choice':poll.choice_set.all()[0]})
+        self.assertContains(response, 'Exit', status_code=200)
+        
+
+class UserSaveTest(TestCase):
+    def test_questionnaire_fill(self):
+        """
+        The user model add latest polls to questionnaire model
+        """
+        fill_polls_and_choice()
+        user = User.objects.create()
+        self.assertEqual(len(user.questionnaire_set.all()), 5)
+
+
+class ClearCookieTest(TestCase):
+    def test_clear_cookie(self):
+        """
+        The clear cookie test.
+        """
+        fill_polls_and_choice()
+        response = self.client.get(reverse('polls:questionnaire'))
+        self.assertTrue('id' in response.client.cookies)
+        response = self.client.get(reverse('polls:clear_cookie'))
+        self.assertEqual('', response.client.cookies['id'].value)
 

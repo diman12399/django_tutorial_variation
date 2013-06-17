@@ -9,6 +9,10 @@ from polls.models import Poll, Choice, User
 
 
 class IndexView(generic.ListView):
+    """
+    Index view for site "polls" part,
+    show 5 latest polls
+    """
     template_name = 'polls/index.html'
     context_object_name = 'latest_polls_list'
 
@@ -21,6 +25,10 @@ class IndexView(generic.ListView):
 
 
 class DetailView(generic.DetailView):
+    """
+    Show poll with its choices,
+    redirect to results page after submit vote
+    """
     model = Poll
     template_name = 'polls/detail.html'
     
@@ -33,58 +41,86 @@ class DetailView(generic.DetailView):
 
 
 class ResultsView(generic.DetailView):
+    """
+    Show votes for request poll
+    """
     model = Poll
     template_name = 'polls/results.html'
 
-def vote_action(request, poll, no_choice_action, sucess_choice_action):
-    try:
-        selected_choice = poll.choice_set.get(pk=request.POST['choice'])
-    except (KeyError, Choice.DoesNotExist):
-        return no_choice_action()
-    else:
-        selected_choice.votes += 1
-        selected_choice.save()
-        return sucess_choice_action()
+def vote_action(request, poll):
+    """
+    Vote fot poll, add choice to statistic table
+    """
+    selected_choice = poll.choice_set.get(pk=request.POST['choice'])
+    selected_choice.votes += 1
+    selected_choice.save()
 
 def vote(request, poll_id):
+    """
+    Vote for single poll
+    """
     p = get_object_or_404(Poll, pk=poll_id)
-    def no_choice(poll=p):
+    try:
+        vote_action(request, p)
+    except KeyError:
         return render(request, 'polls/detail.html', {
             'poll': poll,
             'error_message': "You didn't select a choice.",
         })
-    def choice(poll=p):
-        return HttpResponseRedirect(reverse('polls:results', args=(poll.id,)))
+    else:
+        return HttpResponseRedirect(reverse('polls:results', args=(poll_id,)))
 
-    return vote_action(request, p, no_choice, choice)
+
+def generate_questionnaire_poll(request, quest):
+    """
+    Generate response for questionnaire's qustion
+    """
+    response = None
+    try:
+        vote_action(request, quest.poll)
+    except KeyError:
+        response = render(request, 'polls/questionnaire.html', {
+            'poll': quest.poll,
+            'error_message': "You didn't select a choice.",
+        })
+    else:
+        quest.choice=Choice.objects.get(pk=request.POST['choice'])
+        quest.save()
+        response = HttpResponseRedirect(reverse('polls:questionnaire'))
+
+    response.set_cookie('id', quest.user_id.id)
+    return response
+    
+def generate_questionnaire_result(request, questionnaire_result):
+    """
+    Generate response for questionnaire's result
+    """
+    return render(request, 'polls/user_results.html', {
+        'questionnaire': questionnaire_result,
+    })
+    
 
 def questionnaire(request):
+    """
+    Complex view for provide questionnaire functionality,
+    show unanswered user polls one per page and results page
+    """
     try:
-        p = get_object_or_404(User, pk=request.COOKIES['id'])
+        user = get_object_or_404(User, pk=request.COOKIES['id'])
     except KeyError:
-        p = User.objects.create() 
-    polls = p.questionnaire_set.filter(choice__isnull=True).order_by('poll__order')
+        user = User.objects.create() 
+    questionnaire = user.questionnaire_set.filter(choice__isnull=True).order_by('poll__order')
 
-    if len(polls) > 0:
-        def no_choice(poll=polls[0].poll):
-            return render(request, 'polls/questionnaire.html', {
-                'poll': poll,
-                'error_message': "You didn't select a choice.",
-            })
-        def choice():
-            polls[0].choice=Choice.objects.get(pk=request.POST['choice'])
-            polls[0].save()
-            return HttpResponseRedirect(reverse('polls:questionnaire'))
-
-        response = vote_action(request, polls[0].poll, no_choice, choice)
-        response.set_cookie('id', p.id)
+    if len(questionnaire) > 0:
+        return generate_questionnaire_poll(request, questionnaire[0])
     else:
-        response = render(request, 'polls/user_results.html', {
-            'questionnaire': p.questionnaire_set.all(),
-        })
-    return response 
+        return generate_questionnaire_result(request, user.questionnaire_set.all())
+
 
 def clear_cookie(request):
+    """
+    Clear user 'id' cookie and redirect to index page
+    """
     response = HttpResponseRedirect(reverse('polls:index'))
     response.delete_cookie('id')
     return response
