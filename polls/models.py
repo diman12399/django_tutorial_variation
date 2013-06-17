@@ -27,7 +27,8 @@ class Poll(models.Model):
         """
         Return number latest polls.
         """
-        return Poll.objects.filter(pub_date__lte=timezone.now()).order_by('-pub_date')[:number]
+        return (Poll.objects.filter(pub_date__lte=timezone.now())
+                .order_by('-pub_date')[:number])
 
     was_published_recently.admin_order_fiels = 'pub_date'
     was_published_recently.boolean = True
@@ -48,19 +49,23 @@ class Choice(models.Model):
 
 class User(models.Model):
     """
-    User model, contain anonimous user information, simple way to generate user id.
+    User model, contain anonimous user information,
+    simple way to generate user id.
     """
     creation_time = models.DateTimeField(default=timezone.now())
-    
+
     def save(self, *args, **kwargs):
         """
         Fill Questionnaire model with default number latest polls.
         """
         create = self.id is None
         super(User, self).save(*args, **kwargs)
-        if create is not None: 
-	        for poll in Poll.latest_polls():
-	            Questionnaire.objects.create(user_id=self, poll=poll, choice=None)
+        if create is not None:
+            for poll in Poll.latest_polls():
+                Questionnaire.objects.create(user_id=self,
+                                             poll=poll,
+                                             choice=None)
+
 
 class Questionnaire(models.Model):
     """
@@ -69,4 +74,3 @@ class Questionnaire(models.Model):
     user_id = models.ForeignKey(User)
     poll = models.ForeignKey(Poll)
     choice = models.ForeignKey(Choice, null=True)
-

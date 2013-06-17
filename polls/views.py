@@ -31,13 +31,12 @@ class DetailView(generic.DetailView):
     """
     model = Poll
     template_name = 'polls/detail.html'
-    
+
     def get_queryset(self):
         """
         Excludes any polls that aren't published yet
         """
         return Poll.objects.filter(pub_date__lte=timezone.now())
-
 
 
 class ResultsView(generic.DetailView):
@@ -47,6 +46,7 @@ class ResultsView(generic.DetailView):
     model = Poll
     template_name = 'polls/results.html'
 
+
 def vote_action(request, poll):
     """
     Vote fot poll, add choice to statistic table
@@ -54,6 +54,7 @@ def vote_action(request, poll):
     selected_choice = poll.choice_set.get(pk=request.POST['choice'])
     selected_choice.votes += 1
     selected_choice.save()
+
 
 def vote(request, poll_id):
     """
@@ -84,13 +85,14 @@ def generate_questionnaire_poll(request, quest):
             'error_message': "You didn't select a choice.",
         })
     else:
-        quest.choice=Choice.objects.get(pk=request.POST['choice'])
+        quest.choice = Choice.objects.get(pk=request.POST['choice'])
         quest.save()
         response = HttpResponseRedirect(reverse('polls:questionnaire'))
 
     response.set_cookie('id', quest.user_id.id)
     return response
-    
+
+
 def generate_questionnaire_result(request, questionnaire_result):
     """
     Generate response for questionnaire's result
@@ -98,7 +100,7 @@ def generate_questionnaire_result(request, questionnaire_result):
     return render(request, 'polls/user_results.html', {
         'questionnaire': questionnaire_result,
     })
-    
+
 
 def questionnaire(request):
     """
@@ -108,13 +110,15 @@ def questionnaire(request):
     try:
         user = get_object_or_404(User, pk=request.COOKIES['id'])
     except KeyError:
-        user = User.objects.create() 
-    questionnaire = user.questionnaire_set.filter(choice__isnull=True).order_by('poll__order')
+        user = User.objects.create()
+    questionnaire = (user.questionnaire_set.filter(choice__isnull=True)
+                     .order_by('poll__order'))
 
     if len(questionnaire) > 0:
         return generate_questionnaire_poll(request, questionnaire[0])
     else:
-        return generate_questionnaire_result(request, user.questionnaire_set.all())
+        return generate_questionnaire_result(request,
+                                             user.questionnaire_set.all())
 
 
 def clear_cookie(request):

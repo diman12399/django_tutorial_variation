@@ -2,6 +2,7 @@
 from django.contrib import admin
 from polls.models import Poll, Choice
 
+
 class ChoiceInline(admin.TabularInline):
     model = Choice
     extra = 3
@@ -13,9 +14,10 @@ class PollAdmin(admin.ModelAdmin):
     search_fields = ['question']
     date_hierarchy = 'pub_date'
     fieldsets = [
-        (None, {'fields':['question']}),
-        ('Date information', {'fields':['pub_date'], 'classes': ['collapse']}),
-        (None, {'fields':['order']}),
+        (None, {'fields': ['question']}),
+        ('Date information',
+            {'fields': ['pub_date'], 'classes': ['collapse']}),
+        (None, {'fields': ['order']}),
     ]
     inlines = [ChoiceInline]
 
