@@ -63,7 +63,6 @@ def questionnaire(request):
         p = get_object_or_404(User, pk=request.COOKIES['id'])
     except KeyError:
         p = User.objects.create() 
-        response.set_cookie('id', p.id)
     polls = p.questionnaire_set.filter(choice__isnull=True).order_by('poll__order')
 
     if len(polls) > 0:
@@ -78,9 +77,14 @@ def questionnaire(request):
             return HttpResponseRedirect(reverse('polls:questionnaire'))
 
         response = vote_action(request, polls[0].poll, no_choice, choice)
+        response.set_cookie('id', p.id)
     else:
         response = render(request, 'polls/user_results.html', {
             'questionnaire': p.questionnaire_set.all(),
         })
     return response 
 
+def clear_cookie(request):
+    response = HttpResponseRedirect(reverse('polls:index'))
+    response.delete_cookie('id')
+    return response
