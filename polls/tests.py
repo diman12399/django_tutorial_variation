@@ -149,7 +149,6 @@ class QuestionnaireTest(TestCase):
             response = response.client.post(reverse('polls:questionnaire'),
                                             {'choice':
                                              poll.choice_set.all()[0]})
-        self.assertContains(response, 'Exit', status_code=200)
 
 
 class UserSaveTest(TestCase):

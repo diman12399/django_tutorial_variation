@@ -74,20 +74,25 @@ def vote(request, poll_id):
 
 def generate_questionnaire_poll(request, quest):
     """
-    Generate response for questionnaire's qustion
+    Generate response for questionnaire's question
     """
     response = None
-    try:
-        vote_action(request, quest.poll)
-    except KeyError:
+    if request.method == 'GET':
         response = render(request, 'polls/questionnaire.html', {
-            'poll': quest.poll,
-            'error_message': "You didn't select a choice.",
+            'poll': quest.poll
         })
     else:
-        quest.choice = Choice.objects.get(pk=request.POST['choice'])
-        quest.save()
-        response = HttpResponseRedirect(reverse('polls:questionnaire'))
+        try:
+            vote_action(request, quest.poll)
+        except KeyError:
+            response = render(request, 'polls/questionnaire.html', {
+                'poll': quest.poll,
+                'error_message': "You didn't select a choice.",
+            })
+        else:
+            quest.choice = Choice.objects.get(pk=request.POST['choice'])
+            quest.save()
+            response = HttpResponseRedirect(reverse('polls:questionnaire'))
 
     response.set_cookie('id', quest.user_id.id)
     return response
