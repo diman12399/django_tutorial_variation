@@ -1,2 +1,2 @@
 {% extends "polls/question.html" %}
-{% block url %}{% url 'polls:questionnaire' %}{% endblock %}
+{% block url %}{% url 'polls:user_vote' poll.id %}{% endblock %}

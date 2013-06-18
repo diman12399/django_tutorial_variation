@@ -76,23 +76,9 @@ def generate_questionnaire_poll(request, quest):
     """
     Generate response for questionnaire's question
     """
-    response = None
-    if request.method == 'GET':
-        response = render(request, 'polls/questionnaire.html', {
-            'poll': quest.poll
-        })
-    else:
-        try:
-            vote_action(request, quest.poll)
-        except KeyError:
-            response = render(request, 'polls/questionnaire.html', {
-                'poll': quest.poll,
-                'error_message': "You didn't select a choice.",
-            })
-        else:
-            quest.choice = Choice.objects.get(pk=request.POST['choice'])
-            quest.save()
-            response = HttpResponseRedirect(reverse('polls:questionnaire'))
+    response = render(request, 'polls/questionnaire.html', {
+        'poll': quest.poll
+    })
 
     response.set_cookie('id', quest.user_id.id)
     return response
@@ -125,6 +111,24 @@ def questionnaire(request):
         return generate_questionnaire_result(request,
                                              user.questionnaire_set.all())
 
+def user_vote(request, poll_id):
+    """
+    Save user vote to database.
+    """ 
+    user = get_object_or_404(User, pk=request.COOKIES['id'])
+    quest = user.questionnaire_set.get(poll_id=poll_id)
+    try:
+        vote_action(request, quest.poll)
+    except KeyError:
+        response = render(request, 'polls/questionnaire.html', {
+            'poll': quest.poll,
+            'error_message': "You didn't select a choice.",
+        })
+    else:
+        quest.choice = Choice.objects.get(pk=request.POST['choice'])
+        quest.save()
+        response = HttpResponseRedirect(reverse('polls:questionnaire'))
+    return response
 
 def clear_cookie(request):
     """

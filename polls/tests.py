@@ -8,8 +8,7 @@ from django.core.urlresolvers import reverse
 from polls.models import Poll, Choice, User
 
 
-class PollMethodTests(TestCase):
-
+class PollMethodTests(TestCase): 
     def test_was_published_recently_with_future_poll(self):
         """
         was_published_recently() should return False for polls whose
@@ -85,9 +84,7 @@ class PollViewsTests(TestCase):
         self.assertQuerysetEqual(response.context['latest_polls_list'], [])
 
     def test_index_view_with_future_poll_and_past_poll(self):
-        """
-        Even if both past and future polls exist, only past polls should be
-        displayed.
+        """ Even if both past and future polls exist, only past polls should be displayed.
         """
         create_poll(question="Past poll.", days=-30)
         create_poll(question="Future poll.", days=30)
@@ -142,13 +139,15 @@ def fill_polls_and_choice():
 class QuestionnaireTest(TestCase):
     def test_questionnaire_sequence(self):
         fill_polls_and_choice()
-        response = self.client.get(reverse('polls:questionnaire'))
-        for i in range(5, -1):
+        for i in range(4, -1, -1):
+            response = self.client.get(reverse('polls:questionnaire'))
             poll = Poll.latest_polls()[i]
             self.assertContains(response, poll.question, status_code=200)
-            response = response.client.post(reverse('polls:questionnaire'),
+            response = response.client.post(reverse('polls:user_vote', args=(poll.id,)),
                                             {'choice':
-                                             poll.choice_set.all()[0]})
+                                             poll.choice_set.all()[0].id})
+        response = self.client.get(reverse('polls:questionnaire'))
+        self.assertContains(response, 'Exit', status_code=200)
 
 
 class UserSaveTest(TestCase):
